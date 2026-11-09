@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { User, Thermometer, TestTube, Wind, Sun } from 'lucide-react';
+import { User, Thermometer, TestTube, Wind, Sun, Download } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileMenu from '@/components/MobileMenu';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -10,67 +9,34 @@ import AnimatedCard from '@/components/AnimatedCard';
 import AlertManager from '@/components/AlertManager';
 import SkeletonCard from '@/components/SkeletonCard';
 import SkeletonChart from '@/components/SkeletonChart';
+import { useTelemetry } from '@/lib/useTelemetry';
+import type { Sample } from '@/lib/telemetry';
+
+function downloadCsv(samples: Sample[]) {
+  const rows = [
+    'timestamp,temp_c,ph,co2_ppm',
+    ...samples.map((s) => `${new Date(s.t).toISOString()},${s.temp},${s.ph},${s.co2}`),
+  ];
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `aquasync-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [temp, setTemp] = useState(24.8);
-  const [ph, setPh] = useState(6.8);
-  const [co2, setCo2] = useState(30);
+  const { samples, last, ready } = useTelemetry();
 
-  const [chartData, setChartData] = useState([
-    { time: '00:00', temp: 24.2 },
-    { time: '04:00', temp: 24.1 },
-    { time: '08:00', temp: 24.4 },
-    { time: '12:00', temp: 24.9 },
-    { time: '16:00', temp: 25.2 },
-    { time: '20:00', temp: 24.7 },
-    { time: '23:00', temp: 24.3 },
-  ]);
+  const chartData = samples.map((s) => ({
+    label: new Date(s.t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    temp: s.temp,
+  }));
 
-  const tempRef = useRef(temp);
-  const phRef = useRef(ph);
-  const co2Ref = useRef(co2);
-
-  useEffect(() => {
-    tempRef.current = temp;
-    phRef.current = ph;
-    co2Ref.current = co2;
-  }, [temp, ph, co2]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentTemp = tempRef.current;
-      const currentPh = phRef.current;
-      const currentCo2 = co2Ref.current;
-
-      const newTemp = +(currentTemp + (Math.random() - 0.5) * 0.4).toFixed(1);
-      const newPh = +(currentPh + (Math.random() - 0.5) * 0.2).toFixed(1);
-      const newCo2 = Math.round(currentCo2 + (Math.random() - 0.5) * 3);
-
-      setTemp(newTemp);
-      setPh(newPh);
-      setCo2(newCo2);
-
-      localStorage.setItem('currentTemp', newTemp.toString());
-      localStorage.setItem('currentPh', newPh.toString());
-
-      setChartData(prev => {
-        const now = new Date();
-        const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        const newPoint = { time: timeString, temp: newTemp };
-        const newData = [...prev, newPoint];
-        if (newData.length > 8) newData.shift();
-        return newData;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
+  const temp = last?.temp ?? 24.8;
+  const ph = last?.ph ?? 6.8;
+  const co2 = last?.co2 ?? 30;
 
   return (
     <>
@@ -84,7 +50,7 @@ export default function Home() {
             <div>
               <h1 className="text-xl font-semibold text-[var(--text-primary)]">Обзор экосистемы</h1>
               <p className="text-xs text-[var(--text-dim)] mt-0.5">
-                Понедельник, 12:45 • <span className="text-[var(--accent)]">● Live данные</span>
+                Данные обновляются каждые 5 сек • <span className="text-[var(--accent)]">● Live</span>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -100,77 +66,79 @@ export default function Home() {
           </header>
 
           <div className="p-8 flex-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-              {loading ? (
-                <>
-                  <SkeletonCard />
-                  <SkeletonCard />
-                  <SkeletonCard />
-                  <SkeletonCard />
-                </>
-              ) : (
-                <>
-                  <AnimatedCard delay={0.1}>
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[var(--text-muted)] text-sm font-medium">Температура</span>
-                        <Thermometer className="w-6 h-6 text-[var(--accent-warm)] opacity-80" />
-                      </div>
-                      <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{temp}°C</h3>
-                      <p className="text-xs text-[var(--accent)] flex items-center gap-1.5 mt-2">
-                        <span className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-pulse"></span> Комфортно для растений
-                      </p>
+            {!ready ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                <AnimatedCard delay={0.1}>
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[var(--text-muted)] text-sm font-medium">Температура</span>
+                      <Thermometer className="w-6 h-6 text-[var(--accent-warm)] opacity-80" />
                     </div>
-                  </AnimatedCard>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{temp}°C</h3>
+                    <p className="text-xs text-[var(--accent)] flex items-center gap-1.5 mt-2">
+                      <span className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-pulse"></span> Комфортно
+                    </p>
+                  </div>
+                </AnimatedCard>
 
-                  <AnimatedCard delay={0.2}>
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[var(--text-muted)] text-sm font-medium">Уровень pH</span>
-                        <TestTube className="w-6 h-6 text-[var(--accent-blue)] opacity-80" />
-                      </div>
-                      <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{ph}</h3>
-                      <p className="text-xs text-[var(--text-muted)] mt-2">Идеально для травника</p>
+                <AnimatedCard delay={0.2}>
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[var(--text-muted)] text-sm font-medium">Уровень pH</span>
+                      <TestTube className="w-6 h-6 text-[var(--accent-blue)] opacity-80" />
                     </div>
-                  </AnimatedCard>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{ph}</h3>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">Идеально для травника</p>
+                  </div>
+                </AnimatedCard>
 
-                  <AnimatedCard delay={0.3}>
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[var(--text-muted)] text-sm font-medium">Уровень CO2</span>
-                        <Wind className="w-6 h-6 text-[var(--accent-green)] opacity-80" />
-                      </div>
-                      <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{co2} ppm</h3>
-                      <p className="text-xs text-[var(--text-muted)] mt-2">Подача включена</p>
+                <AnimatedCard delay={0.3}>
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[var(--text-muted)] text-sm font-medium">Уровень CO2</span>
+                      <Wind className="w-6 h-6 text-[var(--accent-green)] opacity-80" />
                     </div>
-                  </AnimatedCard>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{co2} ppm</h3>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">Подача включена</p>
+                  </div>
+                </AnimatedCard>
 
-                  <AnimatedCard delay={0.4}>
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[var(--text-muted)] text-sm font-medium">Освещение</span>
-                        <Sun className="w-6 h-6 text-[var(--accent-warm)] opacity-80" />
-                      </div>
-                      <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)]">75%</h3>
-                      <p className="text-xs text-[var(--accent-warm)] mt-2">Режим: Полдень</p>
+                <AnimatedCard delay={0.4}>
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[var(--text-muted)] text-sm font-medium">Освещение</span>
+                      <Sun className="w-6 h-6 text-[var(--accent-warm)] opacity-80" />
                     </div>
-                  </AnimatedCard>
-                </>
-              )}
-            </div>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)]">75%</h3>
+                    <p className="text-xs text-[var(--accent-warm)] mt-2">Режим: Полдень</p>
+                  </div>
+                </AnimatedCard>
+              </div>
+            )}
 
-            {loading ? (
+            {!ready ? (
               <SkeletonChart />
             ) : (
               <AnimatedCard delay={0.5}>
                 <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="font-semibold text-[var(--text-primary)] text-lg">История температуры</h3>
-                      <p className="text-xs text-[var(--text-dim)]">Обновляется в реальном времени</p>
+                      <h3 className="font-semibold text-[var(--text-primary)] text-lg">История температуры (24ч)</h3>
+                      <p className="text-xs text-[var(--text-dim)]">Шаг дискретизации: 5 минут</p>
                     </div>
-                    <button className="text-xs bg-[var(--bg-card)] hover:bg-[var(--border)] px-3 py-1.5 rounded-lg text-[var(--accent)] border border-[var(--border-hover)] transition-colors">
-                      Скачать отчет
+                    <button 
+                      onClick={() => downloadCsv(samples)}
+                      className="flex items-center gap-2 text-xs bg-[var(--bg-card)] hover:bg-[var(--border)] px-3 py-1.5 rounded-lg text-[var(--accent)] border border-[var(--border-hover)] transition-colors"
+                    >
+                      <Download className="w-3 h-3" />
+                      Скачать отчёт
                     </button>
                   </div>
                   <div style={{ width: '100%', height: 320 }}>
@@ -183,7 +151,8 @@ export default function Home() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                        <XAxis dataKey="time" stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                        {/* interval={47} прореживает подписи, чтобы 288 точек не наложились */}
+                        <XAxis dataKey="label" interval={47} stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                         <YAxis stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
                         <Tooltip 
                           contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
