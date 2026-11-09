@@ -2,17 +2,18 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { time: '00:00', temp: 24.2 },
-  { time: '04:00', temp: 24.1 },
-  { time: '08:00', temp: 24.4 },
-  { time: '12:00', temp: 24.9 },
-  { time: '16:00', temp: 25.2 },
-  { time: '20:00', temp: 24.7 },
-  { time: '23:00', temp: 24.3 },
-];
+interface ChartDataPoint {
+  time: string;
+  temp: number;
+}
 
-export default function TemperatureChart() {
+interface TemperatureChartProps {
+  data: ChartDataPoint[];
+}
+
+export default function TemperatureChart({ data }: TemperatureChartProps) {
+  console.log('Chart data received:', data);
+
   return (
     <div className="h-full w-full pt-2">
       <ResponsiveContainer width="100%" height="100%">
@@ -26,7 +27,7 @@ export default function TemperatureChart() {
           <CartesianGrid strokeDasharray="3 3" stroke="#222922" vertical={false} />
           <XAxis dataKey="time" stroke="#6B7365" fontSize={12} tickLine={false} axisLine={false} dy={10} />
           <YAxis stroke="#6B7365" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-          <Tooltip
+          <Tooltip 
             contentStyle={{ backgroundColor: '#111511', border: '1px solid #222922', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
             labelStyle={{ color: '#E5E7E3', fontWeight: 'bold', marginBottom: '4px' }}
             itemStyle={{ color: '#7A9B76' }}
