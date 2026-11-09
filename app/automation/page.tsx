@@ -1,14 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { User, Thermometer, Moon, Wind, AlertTriangle, CheckCircle, Info, Siren, Save, RefreshCw, ClipboardList, Settings } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileMenu from '@/components/MobileMenu';
+import ThemeToggle from '@/components/ThemeToggle';
 import AnimatedCard from '@/components/AnimatedCard';
 import { AnimatePresence } from 'framer-motion';
 import Toast from '@/components/Toast';
+import SkeletonList from '@/components/SkeletonList';
 
 export default function AutomationPage() {
+  const [loading, setLoading] = useState(true);
   const [testAlerts, setTestAlerts] = useState<Array<{id: string; message: string; type: 'warning' | 'success' | 'error' | 'info'}>>([]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const rules = [
     {
@@ -18,8 +27,8 @@ export default function AutomationPage() {
       action: 'Включить помпы на 100%',
       status: 'active',
       lastTriggered: '12 августа',
-      icon: '🌡️',
-      color: '#C2A878',
+      icon: Thermometer,
+      color: 'var(--accent-warm)',
     },
     {
       id: 2,
@@ -28,8 +37,8 @@ export default function AutomationPage() {
       action: 'Выключить основной свет, включить синий 5%',
       status: 'active',
       lastTriggered: 'Сегодня, 22:00',
-      icon: '🌙',
-      color: '#6B8C96',
+      icon: Moon,
+      color: 'var(--accent-blue)',
     },
     {
       id: 3,
@@ -38,8 +47,8 @@ export default function AutomationPage() {
       action: 'Включить подачу CO2 (2 пузырька/сек)',
       status: 'active',
       lastTriggered: 'Сегодня, 08:00',
-      icon: '🫧',
-      color: '#8DA378',
+      icon: Wind,
+      color: 'var(--accent-green)',
     },
     {
       id: 4,
@@ -48,8 +57,8 @@ export default function AutomationPage() {
       action: 'Отправить уведомление',
       status: 'inactive',
       lastTriggered: 'Никогда',
-      icon: '⚠️',
-      color: '#9B7A9B',
+      icon: AlertTriangle,
+      color: 'var(--accent-purple)',
     },
   ];
 
@@ -80,6 +89,18 @@ export default function AutomationPage() {
     },
   ];
 
+  const getAlertIcon = (type: string) => {
+    if (type === 'warning') return AlertTriangle;
+    if (type === 'success') return CheckCircle;
+    return Info;
+  };
+
+  const getAlertColor = (type: string) => {
+    if (type === 'warning') return 'var(--accent-warm)';
+    if (type === 'success') return 'var(--accent)';
+    return 'var(--accent-blue)';
+  };
+
   const runAlertTest = () => {
     const testMessages = [
       { message: 'Температура повышена! 26.5°C', type: 'warning' as const },
@@ -100,7 +121,7 @@ export default function AutomationPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0D100D] text-[#E5E7E3] flex overflow-hidden font-sans">
+    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex overflow-hidden font-sans">
       <Sidebar />
       <MobileMenu />
 
@@ -119,18 +140,19 @@ export default function AutomationPage() {
       </div>
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <header className="h-20 border-b border-[#222922] flex items-center justify-between px-8 bg-[#0D100D]/90 backdrop-blur-md sticky top-0 z-10">
+        <header className="h-20 border-b border-[var(--border)] flex items-center justify-between px-8 bg-[var(--bg-primary)]/90 backdrop-blur-md sticky top-0 z-10">
           <div>
-            <h1 className="text-xl font-semibold text-[#E5E7E3]">Автоматизация</h1>
-            <p className="text-xs text-[#6B7365] mt-0.5">Правила и сценарии для экосистемы</p>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">Автоматизация</h1>
+            <p className="text-xs text-[var(--text-dim)] mt-0.5">Правила и сценарии для экосистемы</p>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-[#C2CCC0]">Природный травник</p>
-              <p className="text-xs text-[#6B7365]">Гостиная • 240 литров</p>
+              <p className="text-sm font-medium text-[var(--text-secondary)]">Природный травник</p>
+              <p className="text-xs text-[var(--text-dim)]">Гостиная • 240 литров</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-[#1C241C] border border-[#2C362C] flex items-center justify-center text-lg cursor-pointer hover:border-[#7A9B76]/50 transition-colors">
-              👤
+            <ThemeToggle />
+            <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--border-hover)] flex items-center justify-center cursor-pointer hover:border-[var(--accent)]/50 transition-colors">
+              <User className="w-5 h-5 text-[var(--accent)]" />
             </div>
           </div>
         </header>
@@ -138,136 +160,148 @@ export default function AutomationPage() {
         <div className="p-8 flex-1">
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-[#E5E7E3]">Правила автоматизации</h2>
-              <button className="text-sm bg-[#1C241C] hover:bg-[#222922] px-4 py-2 rounded-lg text-[#A3B8A0] border border-[#2C362C] transition-colors">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Правила автоматизации</h2>
+              <button className="text-sm bg-[var(--bg-card)] hover:bg-[var(--border)] px-4 py-2 rounded-lg text-[var(--accent)] border border-[var(--border-hover)] transition-colors">
                 + Создать правило
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {rules.map((rule, index) => (
-                <AnimatedCard key={rule.id} delay={0.1 + index * 0.1}>
-                  <div className={`bg-[#111511] border rounded-2xl p-6 transition-all ${
-                    rule.status === 'active'
-                      ? 'border-[#2C362C] hover:border-[#7A9B76]/40'
-                      : 'border-[#222922] opacity-60'
-                  }`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                          style={{ backgroundColor: `${rule.color}20` }}
-                        >
-                          {rule.icon}
+            {loading ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SkeletonList count={2} />
+                <SkeletonList count={2} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {rules.map((rule, index) => {
+                  const Icon = rule.icon;
+                  return (
+                    <AnimatedCard key={rule.id} delay={0.1 + index * 0.1} interactive>
+                      <div className={`bg-[var(--bg-secondary)] border rounded-2xl p-6 transition-all ${
+                        rule.status === 'active'
+                          ? 'border-[var(--border-hover)] hover:border-[var(--accent)]/40'
+                          : 'border-[var(--border)] opacity-60'
+                      }`}>
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center"
+                              style={{ backgroundColor: `${rule.color}20` }}
+                            >
+                              <Icon className="w-6 h-6" style={{ color: rule.color }} />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-[var(--text-primary)]">{rule.name}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  rule.status === 'active' ? 'bg-[var(--accent)]' : 'bg-[var(--text-dim)]'
+                                }`}></div>
+                                <span className="text-xs" style={{ color: rule.status === 'active' ? 'var(--accent)' : 'var(--text-dim)' }}>
+                                  {rule.status === 'active' ? 'Активно' : 'Неактивно'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <button className="text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors">
+                            <Settings className="w-5 h-5" />
+                          </button>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-[#E5E7E3]">{rule.name}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className={`w-2 h-2 rounded-full ${
-                              rule.status === 'active' ? 'bg-[#7A9B76]' : 'bg-[#6B7365]'
-                            }`}></div>
-                            <span className="text-xs" style={{ color: rule.status === 'active' ? '#7A9B76' : '#6B7365' }}>
-                              {rule.status === 'active' ? 'Активно' : 'Неактивно'}
-                            </span>
+
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="text-[var(--text-muted)] w-20">Если:</span>
+                            <span className="text-[var(--text-primary)] font-medium">{rule.trigger}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="text-[var(--text-muted)] w-20">То:</span>
+                            <span className="text-[var(--text-primary)] font-medium">{rule.action}</span>
                           </div>
                         </div>
-                      </div>
-                      <button className="text-[#6B7365] hover:text-[#E5E7E3] transition-colors">
-                        ⚙️
-                      </button>
-                    </div>
 
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-[#8F978B] w-20">Если:</span>
-                        <span className="text-[#E5E7E3] font-medium">{rule.trigger}</span>
+                        <div className="pt-4 border-t border-[var(--border)]">
+                          <p className="text-xs text-[var(--text-dim)]">
+                            Последнее срабатывание: <span className="text-[var(--text-muted)]">{rule.lastTriggered}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-[#8F978B] w-20">То:</span>
-                        <span className="text-[#E5E7E3] font-medium">{rule.action}</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-[#222922]">
-                      <p className="text-xs text-[#6B7365]">
-                        Последнее срабатывание: <span className="text-[#8F978B]">{rule.lastTriggered}</span>
-                      </p>
-                    </div>
-                  </div>
-                </AnimatedCard>
-              ))}
-            </div>
+                    </AnimatedCard>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-[#E5E7E3]">Алерты и уведомления</h2>
-              <button className="text-xs text-[#6B7365] hover:text-[#A3B8A0] transition-colors">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Алерты и уведомления</h2>
+              <button className="text-xs text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors">
                 Очистить историю
               </button>
             </div>
 
             <div className="space-y-3">
-              {alerts.map((alert, index) => (
-                <AnimatedCard key={alert.id} delay={0.5 + index * 0.1}>
-                  <div className={`p-5 rounded-xl border transition-all ${
-                    alert.type === 'warning'
-                      ? 'bg-[#C2A878]/10 border-[#C2A878]/30'
-                      : alert.type === 'success'
-                      ? 'bg-[#7A9B76]/10 border-[#7A9B76]/30'
-                      : 'bg-[#6B8C96]/10 border-[#6B8C96]/30'
-                  } ${alert.resolved ? 'opacity-60' : ''}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className="text-2xl">
-                          {alert.type === 'warning' ? '⚠️' : alert.type === 'success' ? '✅' : 'ℹ️'}
+              {alerts.map((alert, index) => {
+                const AlertIcon = getAlertIcon(alert.type);
+                const alertColor = getAlertColor(alert.type);
+                return (
+                  <AnimatedCard key={alert.id} delay={0.5 + index * 0.1}>
+                    <div className={`p-5 rounded-xl border transition-all ${
+                      alert.type === 'warning'
+                        ? 'bg-[var(--accent-warm)]/10 border-[var(--accent-warm)]/30'
+                        : alert.type === 'success'
+                        ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30'
+                        : 'bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/30'
+                    } ${alert.resolved ? 'opacity-60' : ''}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          <AlertIcon className="w-6 h-6 shrink-0" style={{ color: alertColor }} />
+                          <div className="flex-1">
+                            <h4 className="font-medium text-[var(--text-primary)] mb-1">{alert.title}</h4>
+                            <p className="text-sm text-[var(--text-muted)]">{alert.message}</p>
+                            <p className="text-xs text-[var(--text-dim)] mt-2">{alert.time}</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-[#E5E7E3] mb-1">{alert.title}</h4>
-                          <p className="text-sm text-[#8F978B]">{alert.message}</p>
-                          <p className="text-xs text-[#6B7365] mt-2">{alert.time}</p>
-                        </div>
+                        {!alert.resolved && (
+                          <button className="text-xs bg-[var(--bg-card)] px-3 py-1.5 rounded-lg text-[var(--accent)] border border-[var(--border-hover)] hover:bg-[var(--border)] transition-colors">
+                            Отметить решённым
+                          </button>
+                        )}
                       </div>
-                      {!alert.resolved && (
-                        <button className="text-xs bg-[#1C241C] px-3 py-1.5 rounded-lg text-[#A3B8A0] border border-[#2C362C] hover:bg-[#222922] transition-colors">
-                          Отметить решённым
-                        </button>
-                      )}
                     </div>
-                  </div>
-                </AnimatedCard>
-              ))}
+                  </AnimatedCard>
+                );
+              })}
             </div>
           </div>
 
           <AnimatedCard delay={0.9}>
-            <div className="mt-8 bg-[#111511] border border-[#222922] rounded-2xl p-6">
-              <h3 className="font-semibold text-[#E5E7E3] mb-4">Быстрые действия</h3>
+            <div className="mt-8 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
+              <h3 className="font-semibold text-[var(--text-primary)] mb-4">Быстрые действия</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <button 
                   onClick={runAlertTest}
-                  className="p-4 bg-[#0D100D] rounded-xl border border-[#222922] hover:border-[#C2A878]/40 transition-all group cursor-pointer"
+                  className="p-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] hover:border-[var(--accent-warm)]/40 transition-all group cursor-pointer"
                 >
-                  <div className="text-2xl mb-2">🚨</div>
-                  <div className="text-sm font-medium text-[#E5E7E3] group-hover:text-[#C2A878] transition-colors">
+                  <Siren className="w-6 h-6 text-[var(--accent-warm)] mb-2 mx-auto" />
+                  <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-warm)] transition-colors">
                     Тест алертов
                   </div>
                 </button>
-                <button className="p-4 bg-[#0D100D] rounded-xl border border-[#222922] hover:border-[#7A9B76]/40 transition-all group cursor-pointer">
-                  <div className="text-2xl mb-2">💾</div>
-                  <div className="text-sm font-medium text-[#E5E7E3] group-hover:text-[#7A9B76] transition-colors">
+                <button className="p-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] hover:border-[var(--accent)]/40 transition-all group cursor-pointer">
+                  <Save className="w-6 h-6 text-[var(--accent)] mb-2 mx-auto" />
+                  <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
                     Экспорт настроек
                   </div>
                 </button>
-                <button className="p-4 bg-[#0D100D] rounded-xl border border-[#222922] hover:border-[#6B8C96]/40 transition-all group cursor-pointer">
-                  <div className="text-2xl mb-2">🔄</div>
-                  <div className="text-sm font-medium text-[#E5E7E3] group-hover:text-[#6B8C96] transition-colors">
+                <button className="p-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] hover:border-[var(--accent-blue)]/40 transition-all group cursor-pointer">
+                  <RefreshCw className="w-6 h-6 text-[var(--accent-blue)] mb-2 mx-auto" />
+                  <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
                     Калибровка
                   </div>
                 </button>
-                <button className="p-4 bg-[#0D100D] rounded-xl border border-[#222922] hover:border-[#9B7A9B]/40 transition-all group cursor-pointer">
-                  <div className="text-2xl mb-2">📋</div>
-                  <div className="text-sm font-medium text-[#E5E7E3] group-hover:text-[#9B7A9B] transition-colors">
+                <button className="p-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] hover:border-[var(--accent-purple)]/40 transition-all group cursor-pointer">
+                  <ClipboardList className="w-6 h-6 text-[var(--accent-purple)] mb-2 mx-auto" />
+                  <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-purple)] transition-colors">
                     Логи системы
                   </div>
                 </button>

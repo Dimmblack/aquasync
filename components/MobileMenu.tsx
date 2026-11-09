@@ -3,29 +3,29 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Leaf, Lightbulb, Thermometer, Settings, Sliders, Menu, X } from 'lucide-react';
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
   const menuItems = [
-    { href: '/', label: 'Дашборд', icon: '🌿' },
-    { href: '/lighting', label: 'Освещение', icon: '💡' },
-    { href: '/climate', label: 'Климат и вода', icon: '🌡️' },
-    { href: '/automation', label: 'Автоматизация', icon: '⚙️' },
+    { href: '/', label: 'Дашборд', icon: Leaf },
+    { href: '/lighting', label: 'Освещение', icon: Lightbulb },
+    { href: '/climate', label: 'Климат и вода', icon: Thermometer },
+    { href: '/automation', label: 'Автоматизация', icon: Settings },
+    { href: '/settings', label: 'Настройки', icon: Sliders },
   ];
 
   return (
     <>
-      {/* Кнопка гамбургер */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-[#111511] border border-[#222922] rounded-lg flex items-center justify-center text-[#E5E7E3] hover:border-[#7A9B76]/50 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg flex items-center justify-center text-[var(--text-primary)] hover:border-[var(--accent)]/50 transition-colors"
       >
-        {isOpen ? '✕' : '☰'}
+        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
-      {/* Затемнение фона */}
       {isOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/60 z-40"
@@ -33,25 +33,23 @@ export default function MobileMenu() {
         ></div>
       )}
 
-      {/* Мобильное меню */}
       <div
-        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-[#111511] border-r border-[#222922] z-40 transform transition-transform duration-300 ${
+        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-[var(--bg-secondary)] border-r border-[var(--border)] z-40 transform transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="p-6">
-          {/* Логотип */}
           <Link href="/" className="flex items-center gap-3 mb-10 group" onClick={() => setIsOpen(false)}>
-            <div className="w-9 h-9 bg-[#2C362C] rounded-xl flex items-center justify-center text-[#A3B8A0] font-bold text-xl border border-[#3A473A] group-hover:border-[#7A9B76] transition-colors">
+            <div className="w-9 h-9 bg-[var(--bg-card)] rounded-xl flex items-center justify-center text-[var(--accent)] font-bold text-xl border border-[var(--border-hover)] group-hover:border-[var(--accent)] transition-colors">
               A
             </div>
-            <span className="text-xl font-semibold tracking-wide text-[#E5E7E3]">AquaSync</span>
+            <span className="text-xl font-semibold tracking-wide text-[var(--text-primary)]">AquaSync</span>
           </Link>
 
-          {/* Навигация */}
           <nav className="space-y-1.5">
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
@@ -59,23 +57,22 @@ export default function MobileMenu() {
                   onClick={() => setIsOpen(false)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
                     isActive
-                      ? 'bg-[#1C241C] text-[#A3B8A0] border border-[#2C362C]'
-                      : 'text-[#8F978B] hover:text-[#E5E7E3] hover:bg-[#161C16] border border-transparent'
+                      ? 'bg-[var(--bg-card)] text-[var(--accent)] border border-[var(--border-hover)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] border border-transparent'
                   }`}
                 >
-                  <span className="text-lg opacity-80">{item.icon}</span>
+                  <Icon className="w-5 h-5 opacity-80" />
                   {item.label}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Статус системы */}
-          <div className="mt-8 bg-[#161C16] p-4 rounded-xl border border-[#222922]">
-            <p className="text-sm font-medium text-[#A3B8A0] mb-2">Статус системы</p>
+          <div className="mt-8 bg-[var(--bg-tertiary)] p-4 rounded-xl border border-[var(--border)]">
+            <p className="text-sm font-medium text-[var(--accent)] mb-2">Статус системы</p>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#7A9B76] rounded-full"></div>
-              <span className="text-xs text-[#7A9B76] font-medium">Экосистема стабильна</span>
+              <div className="w-2 h-2 bg-[var(--accent)] rounded-full"></div>
+              <span className="text-xs text-[var(--accent)] font-medium">Экосистема стабильна</span>
             </div>
           </div>
         </div>
