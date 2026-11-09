@@ -3,6 +3,9 @@
 import Skeleton from './Skeleton';
 
 export default function SkeletonChart() {
+  // Фиксированные высоты вместо Math.random() для совместимости с Next.js SSR
+  const heights = ['40%', '60%', '35%', '70%', '50%', '65%', '45%', '55%'];
+
   return (
     <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
       <div className="flex justify-between items-center mb-6">
@@ -13,11 +16,11 @@ export default function SkeletonChart() {
         <Skeleton width="100px" height="32px" rounded="md" />
       </div>
       <div className="h-64 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] p-6 flex items-end justify-between gap-2">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {heights.map((height, i) => (
           <Skeleton
             key={i}
             width="100%"
-            height={`${30 + Math.random() * 50}%`}
+            height={height}
             rounded="sm"
           />
         ))}
