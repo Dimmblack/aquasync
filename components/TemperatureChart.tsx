@@ -2,7 +2,6 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Данные за 24 часа (температура немного поднимается днем, когда светит свет)
 const data = [
   { time: '00:00', temp: 24.2 },
   { time: '04:00', temp: 24.1 },
@@ -24,46 +23,16 @@ export default function TemperatureChart() {
               <stop offset="95%" stopColor="#7A9B76" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          
           <CartesianGrid strokeDasharray="3 3" stroke="#222922" vertical={false} />
-          
-          <XAxis 
-            dataKey="time" 
-            stroke="#6B7365" 
-            fontSize={12} 
-            tickLine={false} 
-            axisLine={false} 
-            dy={10}
-          />
-          
-          <YAxis 
-            stroke="#6B7365" 
-            fontSize={12} 
-            tickLine={false} 
-            axisLine={false} 
-            domain={['dataMin - 0.5', 'dataMax + 0.5']}
-          />
-          
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#111511', 
-              border: '1px solid #222922', 
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-            }}
+          <XAxis dataKey="time" stroke="#6B7365" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+          <YAxis stroke="#6B7365" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+          <Tooltip
+            contentStyle={{ backgroundColor: '#111511', border: '1px solid #222922', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
             labelStyle={{ color: '#E5E7E3', fontWeight: 'bold', marginBottom: '4px' }}
             itemStyle={{ color: '#7A9B76' }}
             cursor={{ stroke: '#222922', strokeWidth: 1, strokeDasharray: '4 4' }}
           />
-          
-          <Area 
-            type="monotone" 
-            dataKey="temp" 
-            stroke="#7A9B76" 
-            strokeWidth={2.5} 
-            fill="url(#colorTemp)" 
-            activeDot={{ r: 5, fill: '#E5E7E3', stroke: '#7A9B76', strokeWidth: 2 }}
-          />
+          <Area type="monotone" dataKey="temp" stroke="#7A9B76" strokeWidth={2.5} fill="url(#colorTemp)" activeDot={{ r: 5, fill: '#E5E7E3', stroke: '#7A9B76', strokeWidth: 2 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
