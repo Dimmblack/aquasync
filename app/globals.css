@@ -16,6 +16,11 @@
   --accent-blue: #6B8C96;
   --accent-purple: #9B7A9B;
   --accent-green: #8DA378;
+  --status-success: #7A9B76;
+  --status-warning: #C2A878;
+  --status-error: #D97A7A;
+  --status-offline: #8F978B;
+  --status-info: #6B8C96;
 }
 
 .light {
@@ -34,6 +39,11 @@
   --accent-blue: #4A6C76;
   --accent-purple: #7A5A7A;
   --accent-green: #6D8358;
+  --status-success: #5A7A56;
+  --status-warning: #A08858;
+  --status-error: #B95A5A;
+  --status-offline: #7A857A;
+  --status-info: #4A6C76;
 }
 
 body {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Leaf, Lightbulb, Thermometer, Settings, Sliders, Menu, X } from 'lucide-react';
+import { Leaf, Lightbulb, Thermometer, Settings, Sliders, Monitor, Menu, X } from 'lucide-react';
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +13,7 @@ export default function MobileMenu() {
     { href: '/', label: 'Дашборд', icon: Leaf },
     { href: '/lighting', label: 'Освещение', icon: Lightbulb },
     { href: '/climate', label: 'Климат и вода', icon: Thermometer },
+    { href: '/devices', label: 'Оборудование', icon: Monitor },
     { href: '/automation', label: 'Автоматизация', icon: Settings },
     { href: '/settings', label: 'Настройки', icon: Sliders },
   ];

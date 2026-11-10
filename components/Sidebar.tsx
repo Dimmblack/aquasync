@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Leaf, Lightbulb, Thermometer, Settings, Sliders } from 'lucide-react';
+import { Leaf, Lightbulb, Thermometer, Settings, Sliders, Monitor } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ export default function Sidebar() {
     { href: '/', label: 'Дашборд', icon: Leaf },
     { href: '/lighting', label: 'Освещение', icon: Lightbulb },
     { href: '/climate', label: 'Климат и вода', icon: Thermometer },
+    { href: '/devices', label: 'Оборудование', icon: Monitor },
     { href: '/automation', label: 'Автоматизация', icon: Settings },
     { href: '/settings', label: 'Настройки', icon: Sliders },
   ];

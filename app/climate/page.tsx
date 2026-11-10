@@ -8,34 +8,37 @@ import ThemeToggle from '@/components/ThemeToggle';
 import AnimatedCard from '@/components/AnimatedCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import SkeletonChart from '@/components/SkeletonChart';
+import StatusBadge from '@/components/StatusBadge';
+import { useDevices } from '@/context/DeviceContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function ClimatePage() {
   const [loading, setLoading] = useState(true);
+  const { getSensorValue, samples } = useDevices();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 
+  const tempSensor = getSensorValue('temperature');
+  const phSensor = getSensorValue('ph');
+  const co2Sensor = getSensorValue('co2');
+  const ecSensor = getSensorValue('ec');
+
   const sensors = [
-    { label: 'Температура', value: '24.8°C', status: 'Норма', color: 'var(--accent)', icon: Thermometer, detail: 'Целевой диапазон: 23-26°C' },
-    { label: 'pH', value: '6.8', status: 'Идеально', color: 'var(--accent-blue)', icon: TestTube, detail: 'Для травника: 6.0-7.0' },
-    { label: 'CO2', value: '30 ppm', status: 'Подача вкл.', color: 'var(--accent-green)', icon: Wind, detail: 'Пузырьков: 2 в сек' },
-    { label: 'TDS', value: '142 ppm', status: 'Норма', color: 'var(--accent-warm)', icon: Droplets, detail: 'Общая минерализация' },
-    { label: 'KH', value: '4°dH', status: 'Норма', color: 'var(--accent-purple)', icon: FlaskConical, detail: 'Карбонатная жёсткость' },
-    { label: 'NO3', value: '5 ppm', status: 'Отлично', color: 'var(--accent)', icon: Leaf, detail: 'Нитраты в пределах нормы' },
+    { label: 'Температура', value: tempSensor?.value ?? '—', unit: '°C', status: tempSensor?.status ?? 'offline', statusLabel: tempSensor?.statusLabel ?? 'Нет связи', color: 'var(--accent)', icon: Thermometer, detail: 'Целевой диапазон: 23-26°C' },
+    { label: 'pH', value: phSensor?.value ?? '—', unit: '', status: phSensor?.status ?? 'offline', statusLabel: phSensor?.statusLabel ?? 'Нет связи', color: 'var(--accent-blue)', icon: TestTube, detail: 'Для травника: 6.0-7.0' },
+    { label: 'CO₂ (расчёт)', value: co2Sensor?.value ?? '—', unit: 'ppm', status: co2Sensor?.status ?? 'offline', statusLabel: co2Sensor?.statusLabel ?? 'Нет связи', color: 'var(--accent-green)', icon: Wind, detail: 'Расчётное значение' },
+    { label: 'EC/TDS', value: ecSensor?.value ?? '—', unit: 'ppm', status: ecSensor?.status ?? 'offline', statusLabel: ecSensor?.statusLabel ?? 'Нет связи', color: 'var(--accent-warm)', icon: Droplets, detail: 'Общая минерализация' },
+    { label: 'KH', value: '4°dH', unit: '', status: 'info', statusLabel: 'Замер 05.11', color: 'var(--accent-purple)', icon: FlaskConical, detail: 'Карбонатная жёсткость, 4 дня назад' },
+    { label: 'NO₃', value: '5 ppm', unit: '', status: 'info', statusLabel: 'Замер 05.11', color: 'var(--accent-green)', icon: Leaf, detail: 'Нитраты в пределах нормы, 4 дня назад' },
   ];
 
-  const chartData = [
-    { time: '00:00', temp: 24.2 },
-    { time: '04:00', temp: 24.1 },
-    { time: '08:00', temp: 24.4 },
-    { time: '12:00', temp: 24.9 },
-    { time: '16:00', temp: 25.2 },
-    { time: '20:00', temp: 24.7 },
-    { time: '23:00', temp: 24.3 },
-  ];
+  const chartData = samples.map((s) => ({
+    label: new Date(s.t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    temp: s.temp,
+  }));
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex overflow-hidden font-sans">
@@ -81,9 +84,11 @@ export default function ClimatePage() {
                         <span className="text-[var(--text-muted)] text-sm font-medium">{sensor.label}</span>
                         <Icon className="w-6 h-6 opacity-70 transition-opacity" style={{ color: sensor.color }} />
                       </div>
-                      <h3 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">{sensor.value}</h3>
-                      <p className="text-xs font-medium mb-1" style={{ color: sensor.color }}>{sensor.status}</p>
-                      <p className="text-xs text-[var(--text-dim)]">{sensor.detail}</p>
+                      <h3 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">
+                        {sensor.value}{sensor.unit && <span className="text-lg text-[var(--text-muted)] ml-1">{sensor.unit}</span>}
+                      </h3>
+                      <StatusBadge status={sensor.status as any} label={sensor.statusLabel} size="sm" />
+                      <p className="text-xs text-[var(--text-dim)] mt-2">{sensor.detail}</p>
                     </div>
                   </AnimatedCard>
                 );
@@ -103,8 +108,8 @@ export default function ClimatePage() {
                   </div>
                   <div className="flex gap-2">
                     <button className="text-xs bg-[var(--bg-card)] px-3 py-1.5 rounded-lg text-[var(--accent)] border border-[var(--border-hover)]">24ч</button>
-                    <button className="text-xs bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg text-[var(--text-dim)] border border-[var(--border)] hover:text-[var(--accent)] transition-colors">7д</button>
-                    <button className="text-xs bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg text-[var(--text-dim)] border border-[var(--border)] hover:text-[var(--accent)] transition-colors">30д</button>
+                    <button disabled className="text-xs bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg text-[var(--text-dim)] border border-[var(--border)] opacity-50 cursor-not-allowed">7д</button>
+                    <button disabled className="text-xs bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg text-[var(--text-dim)] border border-[var(--border)] opacity-50 cursor-not-allowed">30д</button>
                   </div>
                 </div>
                 <div style={{ width: '100%', height: 320 }} className="mt-4">
@@ -112,20 +117,42 @@ export default function ClimatePage() {
                     <AreaChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#7A9B76" stopOpacity={0.25}/>
-                          <stop offset="95%" stopColor="#7A9B76" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                      <XAxis dataKey="time" stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                      <YAxis stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                      <XAxis 
+                        dataKey="label" 
+                        ticks={['00:00', '06:00', '12:00', '18:00', '23:00']}
+                        stroke="var(--text-dim)" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dy={10} 
+                      />
+                      <YAxis 
+                        stroke="var(--text-dim)" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false}
+                        domain={['dataMin - 0.5', 'dataMax + 0.5']}
+                        tickFormatter={(v: number) => v.toFixed(1)}
+                      />
                       <Tooltip 
                         contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
                         labelStyle={{ color: 'var(--text-primary)', fontWeight: 'bold', marginBottom: '4px' }}
-                        itemStyle={{ color: '#7A9B76' }}
+                        itemStyle={{ color: 'var(--accent)' }}
                         cursor={{ stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '4 4' }}
                       />
-                      <Area type="monotone" dataKey="temp" stroke="#7A9B76" strokeWidth={2.5} fill="url(#colorTemp)" activeDot={{ r: 5, fill: 'var(--text-primary)', stroke: '#7A9B76', strokeWidth: 2 }} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="temp" 
+                        stroke="var(--accent)" 
+                        strokeWidth={2.5} 
+                        fill="url(#colorTemp)" 
+                        activeDot={{ r: 5, fill: 'var(--text-primary)', stroke: 'var(--accent)', strokeWidth: 2 }} 
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -141,7 +168,7 @@ export default function ClimatePage() {
                   <div className="relative h-12 bg-gradient-to-r from-[var(--accent-warm)] via-[var(--accent)] to-[var(--accent-blue)] rounded-full overflow-hidden">
                     <div
                       className="absolute top-0 h-full w-1 bg-[var(--text-primary)] shadow-[0_0_10px_rgba(0,0,0,0.3)]"
-                      style={{ left: '40%' }}
+                      style={{ left: '48.6%' }}
                     >
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-card)] border border-[var(--border-hover)] px-2 py-1 rounded text-xs font-bold text-[var(--text-primary)] whitespace-nowrap">
                         6.8
@@ -163,7 +190,7 @@ export default function ClimatePage() {
                       <h3 className="font-semibold text-[var(--text-primary)] text-lg">История подмен воды</h3>
                       <p className="text-xs text-[var(--text-dim)]">Последние 4 недели</p>
                     </div>
-                    <button className="text-xs bg-[var(--bg-card)] hover:bg-[var(--border)] px-3 py-1.5 rounded-lg text-[var(--accent)] border border-[var(--border-hover)] transition-colors">
+                    <button disabled className="text-xs bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg text-[var(--text-dim)] border border-[var(--border)] opacity-50 cursor-not-allowed">
                       + Записать подмену
                     </button>
                   </div>

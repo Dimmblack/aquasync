@@ -1,12 +1,37 @@
 'use client';
 
-import { User, Sprout } from 'lucide-react';
+import { useState } from 'react';
+import { User, Sun, Moon, Lightbulb } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileMenu from '@/components/MobileMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import AnimatedCard from '@/components/AnimatedCard';
 
 export default function LightingPage() {
+  const [intensity, setIntensity] = useState(75);
+  const [scheduleStart] = useState(6);
+  const [scheduleEnd] = useState(18);
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const getBarHeight = (hour: number) => {
+    if (hour < scheduleStart || hour >= scheduleEnd) return 0;
+    const progress = (hour - scheduleStart) / (scheduleEnd - scheduleStart);
+    return Math.sin(progress * Math.PI) * intensity;
+  };
+
+  const getCurrentPhase = () => {
+    const now = new Date().getHours();
+    if (now < scheduleStart || now >= scheduleEnd) return { label: 'Ночь', icon: Moon, color: 'var(--accent-blue)' };
+    const progress = (now - scheduleStart) / (scheduleEnd - scheduleStart);
+    const phase = Math.sin(progress * Math.PI);
+    if (phase < 0.3) return { label: 'Рассвет/Закат', icon: Sun, color: 'var(--accent-warm)' };
+    return { label: 'Полдень', icon: Sun, color: 'var(--accent)' };
+  };
+
+  const currentPhase = getCurrentPhase();
+  const PhaseIcon = currentPhase.icon;
+
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex overflow-hidden font-sans">
       <Sidebar />
@@ -31,52 +56,63 @@ export default function LightingPage() {
         </header>
 
         <div className="p-8 flex-1">
+          {/* Текущий режим */}
           <AnimatedCard delay={0.1}>
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Текущий режим</h2>
-                  <p className="text-sm text-[var(--text-muted)]">Полдень • Интенсивность 75%</p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {currentPhase.label} • Интенсивность {intensity}%
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[var(--accent-warm)] rounded-full animate-pulse"></div>
-                  <span className="text-sm text-[var(--accent-warm)] font-medium">Активно</span>
+                  <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: currentPhase.color }}></div>
+                  <span className="text-sm font-medium" style={{ color: currentPhase.color }}>Активно</span>
                 </div>
               </div>
-              
-              <div className="h-48 bg-gradient-to-b from-[var(--accent-warm)]/20 to-[var(--bg-primary)] rounded-xl border border-[var(--border)] flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent)]/10 to-transparent"></div>
-                <div className="text-center z-10">
-                  <Sprout className="w-16 h-16 text-[var(--accent)] mx-auto mb-2" />
-                  <p className="text-sm text-[var(--text-muted)]">Превью: полный спектр, 6500K</p>
+
+              {/* Превью — шкала спектра */}
+              <div className="h-32 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] p-4 relative overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <PhaseIcon className="w-12 h-12 mx-auto mb-2" style={{ color: currentPhase.color }} />
+                    <p className="text-sm text-[var(--text-muted)]">
+                      {currentPhase.label} • {intensity}% • 6500K
+                    </p>
+                  </div>
                 </div>
+                {/* Шкала спектра */}
+                <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-[#FF6B35] via-[#FFD700] to-[#87CEEB]"></div>
               </div>
             </div>
           </AnimatedCard>
 
+          {/* Световой цикл */}
           <AnimatedCard delay={0.2}>
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6 mb-8">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Световой цикл (24 часа)</h3>
-              
+
               <div className="h-64 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] p-6 relative">
                 <div className="absolute inset-0 flex items-end justify-between px-6 pb-8">
-                  {Array.from({ length: 24 }, (_, i) => {
-                    const hour = i;
-                    let height = 0;
-                    if (hour >= 6 && hour <= 18) {
-                      height = Math.sin(((hour - 6) / 12) * Math.PI) * 100;
-                    }
+                  {hours.map((hour) => {
+                    const height = getBarHeight(hour);
+                    const isNight = hour < scheduleStart || hour >= scheduleEnd;
                     return (
-                      <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                        <div 
-                          className="w-full bg-gradient-to-t from-[var(--accent-warm)]/60 to-[var(--accent-warm)]/20 rounded-t transition-all hover:from-[var(--accent-warm)]/80 hover:to-[var(--accent-warm)]/40 cursor-pointer"
+                      <div key={hour} className="flex-1 flex flex-col items-center justify-end h-full">
+                        <div
+                          className={`w-full rounded-t transition-all ${
+                            isNight
+                              ? 'bg-[var(--accent-blue)]/20 border border-[var(--accent-blue)]/30'
+                              : 'bg-gradient-to-t from-[var(--accent-warm)]/60 to-[var(--accent-warm)]/20 hover:from-[var(--accent-warm)]/80 hover:to-[var(--accent-warm)]/40'
+                          }`}
                           style={{ height: `${height}%` }}
                         ></div>
                       </div>
                     );
                   })}
                 </div>
-                
+
                 <div className="absolute bottom-2 left-6 right-6 flex justify-between text-xs text-[var(--text-dim)]">
                   <span>00:00</span>
                   <span>06:00</span>
@@ -92,13 +128,14 @@ export default function LightingPage() {
                   <span>Свет включён</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[var(--border)] rounded"></div>
+                  <div className="w-3 h-3 bg-[var(--accent-blue)]/20 border border-[var(--accent-blue)]/30 rounded"></div>
                   <span>Ночь</span>
                 </div>
               </div>
             </div>
           </AnimatedCard>
 
+          {/* Управление */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <AnimatedCard delay={0.3}>
               <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
@@ -124,6 +161,40 @@ export default function LightingPage() {
               </div>
             </AnimatedCard>
           </div>
+
+          {/* Ползунок интенсивности */}
+          <AnimatedCard delay={0.6}>
+            <div className="mt-8 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">Интенсивность света</h3>
+                  <p className="text-xs text-[var(--text-dim)]">Текущее значение: {intensity}%</p>
+                </div>
+                <Lightbulb className="w-8 h-8 text-[var(--accent-warm)]" />
+              </div>
+
+              <div className="relative">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={intensity}
+                  onChange={(e) => setIntensity(Number(e.target.value))}
+                  className="w-full h-2 bg-[var(--bg-primary)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-warm)]"
+                  style={{
+                    background: `linear-gradient(to right, var(--accent-warm) ${intensity}%, var(--bg-primary) ${intensity}%)`,
+                  }}
+                />
+                <div className="flex justify-between mt-2 text-xs text-[var(--text-dim)]">
+                  <span>0%</span>
+                  <span>25%</span>
+                  <span>50%</span>
+                  <span>75%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </div>
+          </AnimatedCard>
         </div>
       </div>
     </main>
