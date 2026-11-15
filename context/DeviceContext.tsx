@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import {
   Cpu, Thermometer, TestTube, Droplets, Wind, Lightbulb,
   Waves, FlaskConical
@@ -215,10 +215,57 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
   const [intensity, setIntensity] = useState(75);
   const [alerts, setAlerts] = useState<AlertPayload[]>([]);
 
+  // Интенсивность читается внутри интервала, но не перезапускает его
+  const intensityRef = useRef(intensity);
+  useEffect(() => {
+    intensityRef.current = intensity;
+  }, [intensity]);
+
+  // Флаг: уведомление о перегреве уже выдано
+  const tempHigh = useRef(false);
+
+  // Свет реагирует на ползунок сразу, не дожидаясь тика
+  useEffect(() => {
+    setDevices(prev =>
+      prev.map(d =>
+        d.id === 6 ? { ...d, currentValue: intensity.toString(), lastSeen: 'только что' } : d
+      )
+    );
+  }, [intensity]);
+
   useEffect(() => {
     const initial = history(24, 5);
     setSamples(initial);
     setReady(true);
+
+    // Алерты по фактическому состоянию оборудования — один раз при старте
+    const startTime = new Date().toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    setAlerts([
+      {
+        id: 'pump-e14',
+        type: 'error',
+        title: 'Неисправность помпы E-14',
+        message: 'Обороты 0 · подача CO₂ закрыта правилом защиты течения',
+        time: startTime,
+      },
+      {
+        id: 'doser-offline',
+        type: 'error',
+        title: 'Дозатор не на связи',
+        message: 'Нет связи 12 мин · батарея 12%',
+        time: startTime,
+      },
+      {
+        id: 'ph-calibration',
+        type: 'info',
+        title: 'Калибровка pH-зонда',
+        message: 'Значения приостановлены примерно на 2 мин',
+        time: startTime,
+      },
+    ]);
 
     const id = setInterval(() => {
       const now = Date.now();
@@ -230,59 +277,58 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       });
 
       // Обновляем устройства из единого источника
-      setDevices(prev => prev.map(d => {
-        if (d.id === 2) return { ...d, currentValue: newSample.temp.toFixed(1), lastSeen: 'только что' };
-        if (d.id === 3) return { ...d, currentValue: '—', lastSeen: '~2 мин' }; // калибровка — прочерк
-        if (d.id === 4) return { ...d, currentValue: '142', lastSeen: 'только что' };
-        if (d.id === 5) return { ...d, currentValue: '19', lastSeen: 'только что' }; // жёстко 19, пока выход закрыт
-        if (d.id === 6) return { ...d, currentValue: intensity.toString(), lastSeen: 'только что' };
-        return d;
-      }));
+      setDevices(prev =>
+        prev.map(d => {
+          if (d.id === 2) return { ...d, currentValue: newSample.temp.toFixed(1), lastSeen: 'только что' };
+          if (d.id === 3) return { ...d, currentValue: '—', lastSeen: '~2 мин' }; // калибровка — прочерк
+          if (d.id === 4) return { ...d, currentValue: '142', lastSeen: 'только что' };
+          if (d.id === 5) return { ...d, currentValue: '19', lastSeen: 'только что' }; // выход закрыт
+          if (d.id === 6) return { ...d, currentValue: intensityRef.current.toString(), lastSeen: 'только что' };
+          return d;
+        })
+      );
 
-      // Проверяем пороги для алертов
-      const newAlerts: AlertPayload[] = [];
-      const timeStr = new Date(now).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-      if (newSample.temp > 25.4) {
-        newAlerts.push({
+      // Гистерезис: вход 26.0, выход 25.5 — одно уведомление на переход.
+      // Модель даёт максимум ~25.6 °C, поэтому в демо алерт молчит. Это честно:
+      // порог не подкручен под показ.
+      if (newSample.temp > 26.0 && !tempHigh.current) {
+        const timeStr = new Date(now).toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const alert: AlertPayload = {
           id: `temp-${now}`,
           type: 'warning',
           title: 'Температура повышена',
-          message: `${newSample.temp.toFixed(1)}°C — выше нормы (25.4)`,
+          message: `${newSample.temp.toFixed(1)}°C — выше нормы (26.0)`,
           time: timeStr,
-        });
+        };
+        setAlerts(prev => [alert, ...prev].slice(0, 5));
+        tempHigh.current = true;
       }
-      if (newSample.co2 > 35) {
-        newAlerts.push({
-          id: `co2-${now}`,
-          type: 'warning',
-          title: 'CO₂ повышен',
-          message: `${newSample.co2} ppm — выше нормы`,
-          time: timeStr,
-        });
-      }
-
-      if (newAlerts.length > 0) {
-        setAlerts(prev => [...newAlerts, ...prev].slice(0, 5));
-      }
+      if (newSample.temp < 25.5) tempHigh.current = false;
     }, 5000);
 
     return () => clearInterval(id);
-  }, [intensity]);
+  }, []);
 
-  const isHubOnline = devices[0].status === 'success';
-  const lastUpdate = samples.length > 0
-    ? new Date(samples[samples.length - 1].t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-    : '—';
+  const isHubOnline = devices.find(d => d.id === 1)?.status === 'success';
+  const lastUpdate =
+    samples.length > 0
+      ? new Date(samples[samples.length - 1].t).toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '—';
 
   const getDevice = (id: number) => devices.find(d => d.id === id);
 
   const getSensorValue = (type: string) => {
     const sensorMap: Record<string, number> = {
-      'temperature': 2,
-      'ph': 3,
-      'ec': 4,
-      'co2': 5,
+      temperature: 2,
+      ph: 3,
+      ec: 4,
+      co2: 5,
     };
     const id = sensorMap[type];
     if (!id) return null;
@@ -296,7 +342,20 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <DeviceContext.Provider value={{ devices, getDevice, getSensorValue, isHubOnline, lastUpdate, samples, ready, intensity, setIntensity, alerts }}>
+    <DeviceContext.Provider
+      value={{
+        devices,
+        getDevice,
+        getSensorValue,
+        isHubOnline,
+        lastUpdate,
+        samples,
+        ready,
+        intensity,
+        setIntensity,
+        alerts,
+      }}
+    >
       {children}
     </DeviceContext.Provider>
   );

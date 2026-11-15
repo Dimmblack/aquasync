@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Scan, Check, ArrowRight, ArrowLeft, Wifi, ChevronRight } from 'lucide-react';
 
 interface AddDeviceModalProps {
@@ -33,14 +33,14 @@ export default function AddDeviceModal({ onClose }: AddDeviceModalProps) {
   const [room, setRoom] = useState('Гостиная');
   const [done, setDone] = useState(false);
 
-  // Симуляция сканирования
-  useState(() => {
+  // 4.1: useEffect вместо useState — таймер корректно отменяется при закрытии
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDiscovered(mockDevices);
       setScanning(false);
     }, 2500);
     return () => clearTimeout(timer);
-  });
+  }, []);
 
   const handleNext = () => {
     if (step === 'scan') setStep('found');
@@ -95,11 +95,11 @@ export default function AddDeviceModal({ onClose }: AddDeviceModalProps) {
           {!done && (
             <div className="px-6 pt-4">
               <div className="flex gap-2">
-                {['scan', 'found', 'configure'].map((s, i) => (
+                {(['scan', 'found', 'configure'] as Step[]).map((s, i) => (
                   <div
                     key={s}
                     className={`h-1 flex-1 rounded-full transition-colors ${
-                      ['scan', 'found', 'configure'].indexOf(step) >= i
+                      (['scan', 'found', 'configure'] as Step[]).indexOf(step) >= i
                         ? 'bg-[var(--accent)]'
                         : 'bg-[var(--border)]'
                     }`}

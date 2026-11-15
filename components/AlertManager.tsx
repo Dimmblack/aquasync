@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { useDevices } from '@/context/DeviceContext';
 
@@ -12,15 +12,25 @@ interface Alert {
   time: string;
 }
 
+const MAX_VISIBLE = 3;
+
 export default function AlertManager() {
   const { alerts } = useDevices();
   const [visible, setVisible] = useState<Alert[]>([]);
+  const dismissed = useRef<Set<string>>(new Set());
 
+  // Только добавляем новые, закрытые не возвращаются
   useEffect(() => {
-    setVisible(alerts.slice(0, 3));
+    setVisible(prev => {
+      const shown = new Set(prev.map(a => a.id));
+      const incoming = alerts.filter(a => !shown.has(a.id) && !dismissed.current.has(a.id));
+      if (incoming.length === 0) return prev;
+      return [...incoming, ...prev].slice(0, MAX_VISIBLE);
+    });
   }, [alerts]);
 
   const dismiss = (id: string) => {
+    dismissed.current.add(id);
     setVisible(prev => prev.filter(a => a.id !== id));
   };
 
@@ -51,7 +61,7 @@ export default function AlertManager() {
         return (
           <div
             key={alert.id}
-            className={`border rounded-xl p-4 shadow-lg backdrop-blur-md animate-in slide-in-from-right ${colors[alert.type]}`}
+            className={`border rounded-xl p-4 shadow-lg backdrop-blur-md ${colors[alert.type]}`}
           >
             <div className="flex items-start gap-3">
               <Icon className={`w-5 h-5 shrink-0 ${iconColors[alert.type]}`} />
@@ -62,6 +72,7 @@ export default function AlertManager() {
               </div>
               <button
                 onClick={() => dismiss(alert.id)}
+                aria-label="Закрыть уведомление"
                 className="text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <X className="w-4 h-4" />

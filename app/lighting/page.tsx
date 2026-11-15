@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { User, Sun, Moon, Lightbulb } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileMenu from '@/components/MobileMenu';
@@ -8,35 +9,27 @@ import AnimatedCard from '@/components/AnimatedCard';
 import { useDevices } from '@/context/DeviceContext';
 
 export default function LightingPage() {
-  const { intensity, setIntensity } = useDevices();
+  const { intensity, setIntensity, lightPhase } = useDevices();
+  const [mounted, setMounted] = useState(false);
   const scheduleStart = 6;
-  const scheduleEnd = 18;
+  const scheduleEnd = 18.5; // 6.2: закат до 18:30
+
+  useEffect(() => { setMounted(true); }, []);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const getBarHeight = (hour: number) => {
-    if (hour < scheduleStart || hour >= scheduleEnd) return 4; // минимальная высота для ночи
+    if (hour < scheduleStart || hour >= scheduleEnd) return 4;
     const progress = (hour - scheduleStart) / (scheduleEnd - scheduleStart);
     return Math.sin(progress * Math.PI) * intensity;
   };
 
-  const getCurrentPhase = () => {
-    const now = new Date().getHours();
-    if (now < scheduleStart || now >= scheduleEnd) return { label: 'Ночь', icon: Moon, color: 'var(--accent-blue)' };
-    const progress = (now - scheduleStart) / (scheduleEnd - scheduleStart);
-    const phase = Math.sin(progress * Math.PI);
-    if (phase < 0.3) return { label: 'Рассвет/Закат', icon: Sun, color: 'var(--accent-warm)' };
-    return { label: 'Полдень', icon: Sun, color: 'var(--accent)' };
-  };
-
-  const currentPhase = getCurrentPhase();
-  const PhaseIcon = currentPhase.icon;
+  const PhaseIcon = lightPhase.label === 'Ночь' ? Moon : Sun;
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex overflow-hidden font-sans">
       <Sidebar />
       <MobileMenu />
-
       <div className="flex-1 flex flex-col overflow-y-auto">
         <header className="h-20 border-b border-[var(--border)] flex items-center justify-between px-8 bg-[var(--bg-primary)]/90 backdrop-blur-md sticky top-0 z-10">
           <div>
@@ -62,21 +55,20 @@ export default function LightingPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Текущий режим</h2>
                   <p className="text-sm text-[var(--text-muted)]">
-                    {currentPhase.label} • Интенсивность {intensity}%
+                    {mounted ? lightPhase.label : '—'} • Интенсивность {intensity}%
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: currentPhase.color }}></div>
-                  <span className="text-sm font-medium" style={{ color: currentPhase.color }}>Активно</span>
+                  <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: lightPhase.color }}></div>
+                  <span className="text-sm font-medium" style={{ color: lightPhase.color }}>Активно</span>
                 </div>
               </div>
-
               <div className="h-32 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] p-4 relative overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <PhaseIcon className="w-12 h-12 mx-auto mb-2" style={{ color: currentPhase.color }} />
+                    <PhaseIcon className="w-12 h-12 mx-auto mb-2" style={{ color: lightPhase.color }} />
                     <p className="text-sm text-[var(--text-muted)]">
-                      {currentPhase.label} • {intensity}% • 6500K
+                      {mounted ? lightPhase.label : '—'} • {intensity}% • 6500K
                     </p>
                   </div>
                 </div>
@@ -88,7 +80,6 @@ export default function LightingPage() {
           <AnimatedCard delay={0.2}>
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6 mb-8">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Световой цикл (24 часа)</h3>
-
               <div className="h-64 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] p-6 relative">
                 <div className="absolute inset-0 flex items-end justify-between px-6 pb-8">
                   {hours.map((hour) => {
@@ -96,37 +87,22 @@ export default function LightingPage() {
                     const isNight = hour < scheduleStart || hour >= scheduleEnd;
                     return (
                       <div key={hour} className="flex-1 flex flex-col items-center justify-end h-full">
-                        <div
-                          className={`w-full rounded-t transition-all ${
-                            isNight
-                              ? 'bg-[var(--accent-blue)]/30 border border-[var(--accent-blue)]/50'
-                              : 'bg-gradient-to-t from-[var(--accent-warm)]/60 to-[var(--accent-warm)]/20 hover:from-[var(--accent-warm)]/80 hover:to-[var(--accent-warm)]/40'
-                          }`}
-                          style={{ height: `${height}%` }}
-                        ></div>
+                        <div className={`w-full rounded-t transition-all ${
+                          isNight
+                            ? 'bg-[var(--accent-blue)]/30 border border-[var(--accent-blue)]/50'
+                            : 'bg-gradient-to-t from-[var(--accent-warm)]/60 to-[var(--accent-warm)]/20 hover:from-[var(--accent-warm)]/80 hover:to-[var(--accent-warm)]/40'
+                        }`} style={{ height: `${height}%` }}></div>
                       </div>
                     );
                   })}
                 </div>
-
                 <div className="absolute bottom-2 left-6 right-6 flex justify-between text-xs text-[var(--text-dim)]">
-                  <span>00:00</span>
-                  <span>06:00</span>
-                  <span>12:00</span>
-                  <span>18:00</span>
-                  <span>23:00</span>
+                  <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
                 </div>
               </div>
-
               <div className="flex items-center justify-center gap-6 mt-4 text-sm text-[var(--text-muted)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[var(--accent-warm)]/60 rounded"></div>
-                  <span>Свет включён</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[var(--accent-blue)]/30 border border-[var(--accent-blue)]/50 rounded"></div>
-                  <span>Ночь</span>
-                </div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[var(--accent-warm)]/60 rounded"></div><span>Свет включён</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[var(--accent-blue)]/30 border border-[var(--accent-blue)]/50 rounded"></div><span>Ночь</span></div>
               </div>
             </div>
           </AnimatedCard>
@@ -139,15 +115,13 @@ export default function LightingPage() {
                 <p className="text-xs text-[var(--text-dim)]">Плавное включение за 30 мин</p>
               </div>
             </AnimatedCard>
-
             <AnimatedCard delay={0.4}>
               <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
                 <h4 className="text-sm font-medium text-[var(--text-muted)] mb-3">Закат</h4>
-                <p className="text-2xl font-bold text-[var(--text-primary)] mb-2">18:00</p>
+                <p className="text-2xl font-bold text-[var(--text-primary)] mb-2">18:30</p>
                 <p className="text-xs text-[var(--text-dim)]">Плавное выключение за 30 мин</p>
               </div>
             </AnimatedCard>
-
             <AnimatedCard delay={0.5}>
               <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
                 <h4 className="text-sm font-medium text-[var(--text-muted)] mb-3">Ночной режим</h4>
@@ -166,25 +140,15 @@ export default function LightingPage() {
                 </div>
                 <Lightbulb className="w-8 h-8 text-[var(--accent-warm)]" />
               </div>
-
               <div className="relative">
                 <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={intensity}
+                  type="range" min="0" max="100" value={intensity}
                   onChange={(e) => setIntensity(Number(e.target.value))}
                   className="w-full h-2 bg-[var(--bg-primary)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-warm)]"
-                  style={{
-                    background: `linear-gradient(to right, var(--accent-warm) ${intensity}%, var(--bg-primary) ${intensity}%)`,
-                  }}
+                  style={{ background: `linear-gradient(to right, var(--accent-warm) ${intensity}%, var(--bg-primary) ${intensity}%)` }}
                 />
                 <div className="flex justify-between mt-2 text-xs text-[var(--text-dim)]">
-                  <span>0%</span>
-                  <span>25%</span>
-                  <span>50%</span>
-                  <span>75%</span>
-                  <span>100%</span>
+                  <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
                 </div>
               </div>
             </div>

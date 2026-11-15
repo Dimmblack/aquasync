@@ -1,49 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0D100D;
-  --bg-secondary: #111511;
-  --bg-tertiary: #161C16;
-  --bg-card: #1C241C;
-  --border: #222922;
-  --border-hover: #2C362C;
-  --text-primary: #E5E7E3;
-  --text-secondary: #C2CCC0;
-  --text-muted: #8F978B;
-  --text-dim: #6B7365;
-  --accent: #7A9B76;
-  --accent-warm: #C2A878;
-  --accent-blue: #6B8C96;
-  --accent-purple: #9B7A9B;
-  --accent-green: #8DA378;
-  --status-success: #7A9B76;
-  --status-warning: #C2A878;
-  --status-error: #D97A7A;
-  --status-offline: #8F978B;
-  --status-info: #6B8C96;
+  /* Тёмная тема — как дно аквариума со мхом */
+  --bg-primary: #0E1210;
+  --bg-secondary: #161C18;
+  --bg-tertiary: #1E2622;
+  --bg-card: #1E2622;
+  --border: #2A3430;
+  --border-hover: #3A4842;
+  --text-primary: #E8EDE9;
+  --text-secondary: #A8B8AC;
+  --text-muted: #7A8F80;
+  --text-dim: #5A6E60;
+  
+  /* Акцент — приглушённый мох */
+  --accent: #6B8F6E;
+  --accent-hover: #5A7A5E;
+  --accent-warm: #B8A878;
+  --accent-blue: #5A8A96;
+  --accent-purple: #8A7A96;
+  --accent-green: #6B8F6E;
+  
+  /* Статусы — природные, десатурированные */
+  --status-success: #6B8F6E;
+  --status-warning: #B8A878;
+  --status-error: #A87A7A;
+  --status-offline: #7A8F80;
+  --status-info: #5A8A96;
 }
 
 .light {
-  --bg-primary: #F5F7F5;
+  /* Светлая тема — как светлый аквариум днём */
+  --bg-primary: #F4F7F5;
   --bg-secondary: #FFFFFF;
-  --bg-tertiary: #EEF1EE;
-  --bg-card: #E8ECE8;
-  --border: #D1D8D1;
-  --border-hover: #B8C2B8;
-  --text-primary: #1A1F1A;
-  --text-secondary: #3A423A;
-  --text-muted: #5A655A;
-  --text-dim: #7A857A;
-  --accent: #5A7A56;
-  --accent-warm: #A08858;
-  --accent-blue: #4A6C76;
-  --accent-purple: #7A5A7A;
-  --accent-green: #6D8358;
-  --status-success: #5A7A56;
-  --status-warning: #A08858;
-  --status-error: #B95A5A;
-  --status-offline: #7A857A;
-  --status-info: #4A6C76;
+  --bg-tertiary: #E8EDE9;
+  --bg-card: #E8EDE9;
+  --border: #D4DDD6;
+  --border-hover: #C0CCC2;
+  --text-primary: #1A2420;
+  --text-secondary: #4A5A50;
+  --text-muted: #6B7A70;
+  --text-dim: #8A9A90;
+  
+  /* Акцент — тот же мох, но темнее */
+  --accent: #5A7A5E;
+  --accent-hover: #4A6A4E;
+  --accent-warm: #9A8A5A;
+  --accent-blue: #4A7A86;
+  --accent-purple: #7A6A86;
+  --accent-green: #5A7A5E;
+  
+  /* Статусы */
+  --status-success: #5A7A5E;
+  --status-warning: #9A8A5A;
+  --status-error: #8A6A6A;
+  --status-offline: #8A9A90;
+  --status-info: #4A7A86;
+  
+  /* 2.3: Плотные фоны для тостов в светлой теме — контраст ≥ 4.5:1 */
+  --status-warning-bg: #FFF6E5;
+  --status-error-bg: #FEECEC;
+  --status-info-bg: #EBF3FF;
 }
 
 body {
