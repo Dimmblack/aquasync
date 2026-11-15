@@ -1,6 +1,7 @@
 export type Sample = { t: number; temp: number; ph: number; co2: number };
 
 const round = (n: number, d = 1) => +n.toFixed(d);
+const roundFine = (n: number, d = 2) => +n.toFixed(d);
 
 function seeded(seed: number) {
   let s = seed >>> 0;
@@ -19,7 +20,8 @@ export function simulateAt(ts: number): Sample {
 
   const light = Math.max(0, Math.sin(((h - 6) / 12) * Math.PI));
 
-  const temp = 24.5 + light * 0.9 + Math.sin((h / 24) * 2 * Math.PI) * 0.2 + (rand() - 0.5) * 0.1;
+  // Шум уменьшен до ±0.02, округление до 0.01 — линия плавная
+  const temp = 24.5 + light * 0.9 + Math.sin((h / 24) * 2 * Math.PI) * 0.2 + (rand() - 0.5) * 0.04;
   const ph = 6.8 + light * 0.22 - (1 - light) * 0.15 + (rand() - 0.5) * 0.04;
 
   const injecting = h >= 9 && h < 17;
@@ -27,7 +29,7 @@ export function simulateAt(ts: number): Sample {
     ? 30 + (rand() - 0.5) * 2.5
     : 19 + (1 - light) * 6 + (rand() - 0.5) * 1.5;
 
-  return { t: ts, temp: round(temp), ph: round(ph, 1), co2: Math.round(co2) };
+  return { t: ts, temp: roundFine(temp), ph: round(ph, 1), co2: Math.round(co2) };
 }
 
 export function history(hours = 24, stepMin = 5, now = Date.now()): Sample[] {

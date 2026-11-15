@@ -28,7 +28,7 @@ function downloadCsv(samples: Sample[]) {
 }
 
 export default function Home() {
-  const { samples, ready, getSensorValue, isHubOnline, lastUpdate } = useDevices();
+  const { samples, ready, getSensorValue, isHubOnline, lastUpdate, intensity } = useDevices();
 
   const chartData = samples.map((s) => ({
     label: new Date(s.t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
@@ -39,9 +39,9 @@ export default function Home() {
   const phSensor = getSensorValue('ph');
   const co2Sensor = getSensorValue('co2');
 
-  const temp = tempSensor?.status === 'offline' ? '—' : (tempSensor?.value ?? '—');
-  const ph = phSensor?.status === 'warning' ? '—' : (phSensor?.value ?? '—');
-  const co2 = co2Sensor?.status === 'offline' ? '—' : (co2Sensor?.value ?? '—');
+  const temp = tempSensor?.status === 'offline' ? null : (tempSensor?.value ?? null);
+  const ph = phSensor?.status === 'warning' ? null : (phSensor?.value ?? null);
+  const co2 = co2Sensor?.status === 'offline' ? null : (co2Sensor?.value ?? null);
 
   return (
     <>
@@ -96,7 +96,9 @@ export default function Home() {
                       <span className="text-[var(--text-muted)] text-sm font-medium">Температура</span>
                       <Thermometer className="w-6 h-6 text-[var(--accent-warm)] opacity-80" />
                     </div>
-                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{temp}°C</h3>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">
+                      {temp !== null ? `${temp}°C` : '—'}
+                    </h3>
                     {tempSensor && (
                       <StatusBadge status={tempSensor.status} label={tempSensor.statusLabel} size="sm" />
                     )}
@@ -109,7 +111,9 @@ export default function Home() {
                       <span className="text-[var(--text-muted)] text-sm font-medium">Уровень pH</span>
                       <TestTube className="w-6 h-6 text-[var(--accent-blue)] opacity-80" />
                     </div>
-                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{ph}</h3>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">
+                      {ph !== null ? ph : '—'}
+                    </h3>
                     {phSensor && (
                       <StatusBadge status={phSensor.status} label={phSensor.statusLabel} size="sm" />
                     )}
@@ -122,7 +126,9 @@ export default function Home() {
                       <span className="text-[var(--text-muted)] text-sm font-medium">Уровень CO₂</span>
                       <Wind className="w-6 h-6 text-[var(--accent-green)] opacity-80" />
                     </div>
-                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">{co2} ppm</h3>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)] transition-all">
+                      {co2 !== null ? `${co2} ppm` : '—'}
+                    </h3>
                     {co2Sensor && (
                       <StatusBadge status={co2Sensor.status} label={co2Sensor.statusLabel} size="sm" />
                     )}
@@ -135,7 +141,7 @@ export default function Home() {
                       <span className="text-[var(--text-muted)] text-sm font-medium">Освещение</span>
                       <Sun className="w-6 h-6 text-[var(--accent-warm)] opacity-80" />
                     </div>
-                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)]">75%</h3>
+                    <h3 className="text-3xl font-bold mb-1 text-[var(--text-primary)]">{intensity}%</h3>
                     <p className="text-xs text-[var(--accent-warm)] mt-2">Режим: Полдень</p>
                   </div>
                 </AnimatedCard>
@@ -152,7 +158,7 @@ export default function Home() {
                       <h3 className="font-semibold text-[var(--text-primary)] text-lg">История температуры (24ч)</h3>
                       <p className="text-xs text-[var(--text-dim)]">Шаг дискретизации: 5 минут</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => downloadCsv(samples)}
                       className="flex items-center gap-2 text-xs bg-[var(--bg-card)] hover:bg-[var(--border)] px-3 py-1.5 rounded-lg text-[var(--accent)] border border-[var(--border-hover)] transition-colors"
                     >
@@ -170,36 +176,36 @@ export default function Home() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                        <XAxis 
-                          dataKey="label" 
+                        <XAxis
+                          dataKey="label"
                           ticks={['00:00', '06:00', '12:00', '18:00', '23:00']}
-                          stroke="var(--text-dim)" 
-                          fontSize={12} 
-                          tickLine={false} 
-                          axisLine={false} 
-                          dy={10} 
+                          stroke="var(--text-dim)"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
                         />
-                        <YAxis 
-                          stroke="var(--text-dim)" 
-                          fontSize={12} 
-                          tickLine={false} 
+                        <YAxis
+                          stroke="var(--text-dim)"
+                          fontSize={12}
+                          tickLine={false}
                           axisLine={false}
                           domain={['dataMin - 0.5', 'dataMax + 0.5']}
                           tickFormatter={(v: number) => v.toFixed(1)}
                         />
-                        <Tooltip 
+                        <Tooltip
                           contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
                           labelStyle={{ color: 'var(--text-primary)', fontWeight: 'bold', marginBottom: '4px' }}
                           itemStyle={{ color: 'var(--accent)' }}
                           cursor={{ stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '4 4' }}
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="temp" 
-                          stroke="var(--accent)" 
-                          strokeWidth={2.5} 
-                          fill="url(#colorTemp)" 
-                          activeDot={{ r: 5, fill: 'var(--text-primary)', stroke: 'var(--accent)', strokeWidth: 2 }} 
+                        <Area
+                          type="monotone"
+                          dataKey="temp"
+                          stroke="var(--accent)"
+                          strokeWidth={2.5}
+                          fill="url(#colorTemp)"
+                          activeDot={{ r: 5, fill: 'var(--text-primary)', stroke: 'var(--accent)', strokeWidth: 2 }}
                         />
                       </AreaChart>
                     </ResponsiveContainer>

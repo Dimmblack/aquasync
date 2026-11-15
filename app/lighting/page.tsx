@@ -1,21 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import { User, Sun, Moon, Lightbulb } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileMenu from '@/components/MobileMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import AnimatedCard from '@/components/AnimatedCard';
+import { useDevices } from '@/context/DeviceContext';
 
 export default function LightingPage() {
-  const [intensity, setIntensity] = useState(75);
-  const [scheduleStart] = useState(6);
-  const [scheduleEnd] = useState(18);
+  const { intensity, setIntensity } = useDevices();
+  const scheduleStart = 6;
+  const scheduleEnd = 18;
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const getBarHeight = (hour: number) => {
-    if (hour < scheduleStart || hour >= scheduleEnd) return 0;
+    if (hour < scheduleStart || hour >= scheduleEnd) return 4; // минимальная высота для ночи
     const progress = (hour - scheduleStart) / (scheduleEnd - scheduleStart);
     return Math.sin(progress * Math.PI) * intensity;
   };
@@ -56,7 +56,6 @@ export default function LightingPage() {
         </header>
 
         <div className="p-8 flex-1">
-          {/* Текущий режим */}
           <AnimatedCard delay={0.1}>
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6 mb-8">
               <div className="flex items-center justify-between mb-6">
@@ -72,7 +71,6 @@ export default function LightingPage() {
                 </div>
               </div>
 
-              {/* Превью — шкала спектра */}
               <div className="h-32 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] p-4 relative overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
@@ -82,13 +80,11 @@ export default function LightingPage() {
                     </p>
                   </div>
                 </div>
-                {/* Шкала спектра */}
                 <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-[#FF6B35] via-[#FFD700] to-[#87CEEB]"></div>
               </div>
             </div>
           </AnimatedCard>
 
-          {/* Световой цикл */}
           <AnimatedCard delay={0.2}>
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6 mb-8">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Световой цикл (24 часа)</h3>
@@ -103,7 +99,7 @@ export default function LightingPage() {
                         <div
                           className={`w-full rounded-t transition-all ${
                             isNight
-                              ? 'bg-[var(--accent-blue)]/20 border border-[var(--accent-blue)]/30'
+                              ? 'bg-[var(--accent-blue)]/30 border border-[var(--accent-blue)]/50'
                               : 'bg-gradient-to-t from-[var(--accent-warm)]/60 to-[var(--accent-warm)]/20 hover:from-[var(--accent-warm)]/80 hover:to-[var(--accent-warm)]/40'
                           }`}
                           style={{ height: `${height}%` }}
@@ -128,14 +124,13 @@ export default function LightingPage() {
                   <span>Свет включён</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[var(--accent-blue)]/20 border border-[var(--accent-blue)]/30 rounded"></div>
+                  <div className="w-3 h-3 bg-[var(--accent-blue)]/30 border border-[var(--accent-blue)]/50 rounded"></div>
                   <span>Ночь</span>
                 </div>
               </div>
             </div>
           </AnimatedCard>
 
-          {/* Управление */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <AnimatedCard delay={0.3}>
               <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
@@ -162,7 +157,6 @@ export default function LightingPage() {
             </AnimatedCard>
           </div>
 
-          {/* Ползунок интенсивности */}
           <AnimatedCard delay={0.6}>
             <div className="mt-8 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">

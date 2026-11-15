@@ -29,6 +29,14 @@ export interface Device {
   valueUnit: string;
 }
 
+interface AlertPayload {
+  id: string;
+  type: 'warning' | 'error' | 'info';
+  title: string;
+  message: string;
+  time: string;
+}
+
 interface DeviceContextType {
   devices: Device[];
   getDevice: (id: number) => Device | undefined;
@@ -37,6 +45,9 @@ interface DeviceContextType {
   lastUpdate: string;
   samples: Sample[];
   ready: boolean;
+  intensity: number;
+  setIntensity: (v: number) => void;
+  alerts: AlertPayload[];
 }
 
 const baseDevices: Device[] = [
@@ -201,6 +212,8 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
   const [samples, setSamples] = useState<Sample[]>([]);
   const [ready, setReady] = useState(false);
   const [devices, setDevices] = useState<Device[]>(baseDevices);
+  const [intensity, setIntensity] = useState(75);
+  const [alerts, setAlerts] = useState<AlertPayload[]>([]);
 
   useEffect(() => {
     const initial = history(24, 5);
@@ -210,27 +223,55 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
     const id = setInterval(() => {
       const now = Date.now();
       const newSample = simulateAt(now);
-      
+
       setSamples(prev => {
         const next = [...prev, newSample];
         return next.length > 288 ? next.slice(-288) : next;
       });
 
-      // Обновляем показания устройств из единого источника
+      // Обновляем устройства из единого источника
       setDevices(prev => prev.map(d => {
-        if (d.id === 2) return { ...d, currentValue: newSample.temp.toString(), lastSeen: 'только что' };
-        if (d.id === 3) return { ...d, currentValue: '—', lastSeen: '~2 мин' }; // калибровка
+        if (d.id === 2) return { ...d, currentValue: newSample.temp.toFixed(1), lastSeen: 'только что' };
+        if (d.id === 3) return { ...d, currentValue: '—', lastSeen: '~2 мин' }; // калибровка — прочерк
         if (d.id === 4) return { ...d, currentValue: '142', lastSeen: 'только что' };
-        if (d.id === 5) return { ...d, currentValue: newSample.co2.toString(), lastSeen: 'только что' };
+        if (d.id === 5) return { ...d, currentValue: '19', lastSeen: 'только что' }; // жёстко 19, пока выход закрыт
+        if (d.id === 6) return { ...d, currentValue: intensity.toString(), lastSeen: 'только что' };
         return d;
       }));
+
+      // Проверяем пороги для алертов
+      const newAlerts: AlertPayload[] = [];
+      const timeStr = new Date(now).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+      if (newSample.temp > 25.4) {
+        newAlerts.push({
+          id: `temp-${now}`,
+          type: 'warning',
+          title: 'Температура повышена',
+          message: `${newSample.temp.toFixed(1)}°C — выше нормы (25.4)`,
+          time: timeStr,
+        });
+      }
+      if (newSample.co2 > 35) {
+        newAlerts.push({
+          id: `co2-${now}`,
+          type: 'warning',
+          title: 'CO₂ повышен',
+          message: `${newSample.co2} ppm — выше нормы`,
+          time: timeStr,
+        });
+      }
+
+      if (newAlerts.length > 0) {
+        setAlerts(prev => [...newAlerts, ...prev].slice(0, 5));
+      }
     }, 5000);
 
     return () => clearInterval(id);
-  }, []);
+  }, [intensity]);
 
   const isHubOnline = devices[0].status === 'success';
-  const lastUpdate = samples.length > 0 
+  const lastUpdate = samples.length > 0
     ? new Date(samples[samples.length - 1].t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
     : '—';
 
@@ -255,7 +296,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <DeviceContext.Provider value={{ devices, getDevice, getSensorValue, isHubOnline, lastUpdate, samples, ready }}>
+    <DeviceContext.Provider value={{ devices, getDevice, getSensorValue, isHubOnline, lastUpdate, samples, ready, intensity, setIntensity, alerts }}>
       {children}
     </DeviceContext.Provider>
   );
